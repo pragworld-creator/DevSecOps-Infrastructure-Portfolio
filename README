@@ -1,0 +1,30 @@
+## Project Overview
+This project provisions a highly available, fault-tolerant(AZ Level), secure three-tier AWS infrastructure using a modular Terraform concept. It is designed to achive compliance, automated scaling, and secure state management for collaborative developer environments.
+
+## Architecture Details
+The infrastructure spans across two Availability Zones (AZs) to ensure high availability:
+- Public Tier: Two public subnets dedicated to the Application Load Balancer (ALB).
+- Compute Tier: Two private subnets hosting ASG EC2.
+- Database Tier: Two private subnets strictly dedicated to Amazon RDS.
+
+## Security Practices
+- Traffic Isolation: Implemented Security Group (SG) chaining and strict port configurations to isolate private subnets and configure predictable traffic routing.
+- Secure State Management: Configured a remote Terraform backend using S3 for secure state file storage and DynamoDB for state locking, preventing race conditions in a team environment.
+- PoPL in action: Configuring IAM user with limited access for deploying Infrastructure rather that using root user account.
+
+## AWS CIS Benchmark Compliance
+This infrastructure is designed with security-first principles, inherently satisfying several key AWS Foundation Benchmark controls:
+
+* Storage Security: 
+  - (CIS 2.1.1 & 2.1.5) The S3 backend for Terraform state management enforces strict `Block Public Access` policies and utilizes AES-256 Server-Side Encryption (SSE-S3) at rest.
+
+* Network & Attack Surface Reduction:
+  - (CIS 5.2) Zero open SSH ports (Port 22). EC2 instance management and troubleshooting are conducted purely via AWS Systems Manager (SSM) Session Manager using strict IAM instance profiles.
+  - (CIS 5.3) Databases and backend compute resources are fully isolated from the public internet. Access is strictly governed through Security Group chaining (ALB -> EC2 -> RDS), rejecting all direct IP-based access.
+
+* Secret Management: Strict `.gitignore` enforcement prevents accidental commits of sensitive `.tfvars` files, ensuring no hardcoded AWS credentials or database passwords are leaked to version control.
+
+## Points To Consider
+- Configure IAM user with appropriate access in AWS Console, generate access keys and secret access keys for AWS CLI user setup. And update it on TF provider block with user name replacing "Default"(root).
+- Pre-configure S3 bucket with with exact string "LockID", public access disables, SSE S3 enabled and paste the values in .tf file.
+- Never Hardcode passwords or secrets in .tfvar file, always setup Secret Manager and AWS Endpoints for rds betweed private subnets and Secret manager
