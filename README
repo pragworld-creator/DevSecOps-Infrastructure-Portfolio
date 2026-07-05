@@ -1,3 +1,5 @@
+![alt text](<Screenshot 2026-07-04 050846.png>)
+
 ## Project Overview
 This project provisions a highly available, fault-tolerant(AZ Level), secure three-tier AWS infrastructure using a modular Terraform concept. It is designed to achive compliance, automated scaling, and secure state management for collaborative developer environments.
 
