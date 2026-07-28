@@ -1,4 +1,4 @@
-![alt text](image-1.png)
+https://github.com/pragworld-creator/DevSecOps-Infrastructure-Portfolio/blob/8ac6741eaf4e349d898e7a9788fc0e8055c4a307/image-1.png
 
 ## Project Overview
 This project provisions a highly available, fault-tolerant (AZ Level), secure three-tier AWS infrastructure using a modular Terraform concept. It is designed to achieve compliance, automated scaling, secure state management, and is fully automated via GitHub Actions.
