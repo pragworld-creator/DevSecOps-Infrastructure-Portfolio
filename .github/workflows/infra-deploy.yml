@@ -1,0 +1,57 @@
+name: Infrastructure deployment workflow
+
+on:
+  push:
+    branches: 
+      - main
+    paths:
+      - './terraform/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-west-1
+  ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME_ARN }}
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  Infrastructure-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Downloading-code-into-runner
+        uses: actions/checkout@v4
+
+      - name: OIDC-aws-secure-login-credential
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+
+      - name: Download-&-setup-terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: terraform-init
+        working-directory: ./terraform/environment/
+        run: |
+          terraform init 
+
+      - name: terraform-fmt
+        working-directory: ./terraform/environment/
+        run: |
+          terraform fmt -check
+        
+      - name: terraform-plan
+        working-directory: ./terraform/environment/
+        run: |
+          terraform plan -out=tf-plan
+
+      - name: terraform-apply
+        working-directory: ./terraform/environment/
+        run: |
+          terraform apply -auto-approve tf-plan

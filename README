@@ -1,32 +1,37 @@
-![alt text](<Screenshot 2026-07-04 050846.png>)
+![alt text](image-1.png)
 
 ## Project Overview
-This project provisions a highly available, fault-tolerant(AZ Level), secure three-tier AWS infrastructure using a modular Terraform concept. It is designed to achive compliance, automated scaling, and secure state management for collaborative developer environments.
+This project provisions a highly available, fault-tolerant (AZ Level), secure three-tier AWS infrastructure using a modular Terraform concept. It is designed to achieve compliance, automated scaling, secure state management, and is fully automated via GitHub Actions.
 
 ## Architecture Details
 The infrastructure spans across two Availability Zones (AZs) to ensure high availability:
-- Public Tier: Two public subnets dedicated to the Application Load Balancer (ALB).
-- Compute Tier: Two private subnets hosting ASG EC2.
-- Database Tier: Two private subnets strictly dedicated to Amazon RDS.
+- **Public Tier:** Two public subnets dedicated to the Application Load Balancer (ALB).
+- **Compute Tier:** Two private subnets hosting ASG EC2.
+- **Database Tier:** Two private subnets strictly dedicated to Amazon RDS.
+
+## CI/CD Pipeline Automation (GitHub Actions)
+The infrastructure lifecycle is governed by a GitHub Actions workflow (`Infra-deploy.yml`), ensuring consistent, trackable, and secure deployments:
+- **Zero-Trust Authentication:** Utilizes OpenID Connect (OIDC) to establish a secure, passwordless handshake between GitHub and AWS, completely eliminating the need for long-lived AWS credentials.
+- **Automated format standards:** Enforces code standards by running strict `terraform fmt -check` validations on every push.
+- **Automated IaC Execution:** Automatically initializes the remote backend, generates a precise execution plan (`terraform plan`), and safely applies the exact planned changes to the AWS environment.
 
 ## Security Practices
-- Traffic Isolation: Implemented Security Group (SG) chaining and strict port configurations to isolate private subnets and configure predictable traffic routing.
-- Secure State Management: Configured a remote Terraform backend using S3 for secure state file storage and DynamoDB for state locking, preventing race conditions in a team environment.
-- PoPL in action: Configuring IAM user with limited access for deploying Infrastructure rather that using root user account.
+- **Traffic Isolation:** Implemented Security Group (SG) chaining and strict port configurations to isolate private subnets and configure predictable traffic routing.
+- **Secure State Management:** Configured a remote Terraform backend using S3 for secure state file storage and DynamoDB for state locking, preventing race conditions in a team environment.
+- **PoLP in Action:** Configured a dedicated IAM Role via console with limited access specifically for deploying the infrastructure, adhering to the Principle of Least Privilege.
 
 ## AWS CIS Benchmark Compliance
 This infrastructure is designed with security-first principles, inherently satisfying several key AWS Foundation Benchmark controls:
 
-* Storage Security: 
-  - (CIS 2.1.1 & 2.1.5) The S3 backend for Terraform state management enforces strict `Block Public Access` policies and utilizes AES-256 Server-Side Encryption (SSE-S3) at rest.
+* **Storage Security:** - (CIS 2.1.1 & 2.1.5) The S3 backend for Terraform state management enforces strict `Block Public Access` policies and utilizes AES-256 Server-Side Encryption (SSE-S3) at rest.
 
-* Network & Attack Surface Reduction:
+* **Network & Attack Surface Reduction:**
   - (CIS 5.2) Zero open SSH ports (Port 22). EC2 instance management and troubleshooting are conducted purely via AWS Systems Manager (SSM) Session Manager using strict IAM instance profiles.
   - (CIS 5.3) Databases and backend compute resources are fully isolated from the public internet. Access is strictly governed through Security Group chaining (ALB -> EC2 -> RDS), rejecting all direct IP-based access.
 
-* Secret Management: Strict `.gitignore` enforcement prevents accidental commits of sensitive `.tfvars` files, ensuring no hardcoded AWS credentials or database passwords are leaked to version control.
+* **Secret Management:** Strict `.gitignore` enforcement prevents accidental commits of sensitive `.tfvars` files, ensuring no hardcoded AWS credentials or database passwords are leaked to version control.
 
 ## Points To Consider
-- Configure IAM user with appropriate access in AWS Console, generate access keys and secret access keys for AWS CLI user setup. And update it on TF provider block with user name replacing "Default"(root).
-- Pre-configure S3 bucket with with exact string "LockID", public access disables, SSE S3 enabled and paste the values in .tf file.
-- Never Hardcode passwords or secrets in .tfvar file, always setup Secret Manager and AWS Endpoints for rds betweed private subnets and Secret manager
+- **Authentication Setup:** Because this pipeline uses OIDC, do not generate static AWS Access Keys. Instead, configure an IAM Role with an Identity Provider (IdP) trust policy that allows your specific GitHub repository to assume it. Update your GitHub Secrets with this Role ARN.
+- **Backend Preparation:** Pre-configure the S3 bucket and DynamoDB table (with the exact partition key string "LockID"). Ensure public access is disabled, SSE-S3 is enabled, and reference these values in your backend `.tf` configuration.
+- **Database Secrets:** Never hardcode passwords or secrets in `.tfvars` files. Always set up AWS Secrets Manager and establish VPC Endpoints between your private subnets and Secrets Manager to retrieve credentials securely at runtime.
